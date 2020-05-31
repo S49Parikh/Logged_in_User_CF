@@ -1,0 +1,74 @@
+ID: UserDetail
+_schema-version: '2.1'
+description: Logged in User Detail app
+parameters:
+  deploy_mode: html5-repo
+version: 0.0.1
+modules:
+  - name: userdetail-approuter
+    type: approuter.nodejs
+    path: userdetail-approuter
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+    requires:
+      - name: UserDetail_html5_repo_runtime
+      - name: UserNode_api
+        group: destinations
+        properties:
+          name: UserNode_api
+          url: '~{url}'
+          forwardAuthToken: true
+      - name: uaa_UserDetail
+          
+  - name: UserDetail_ui_deployer
+    type: com.sap.html5.application-content
+    path: UserDetail_ui_deployer
+    requires:
+      - name: UserDetail_html5_repo_host
+    build-parameters:
+      requires:
+        - name: user
+          artifacts:
+            - './*'
+          target-path: resources/user
+  - name: UserNode
+    type: nodejs
+    path: UserNode
+    provides:
+      - name: UserNode_api
+        properties:
+          url: '${default-url}'
+    properties:
+      UAA_SERVICE_NAME: uaa_UserDetail
+    requires:
+      - name: uaa_UserDetail      
+      
+  - name: user
+    type: html5
+    path: user
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms: []
+      build-result: dist
+resources:
+  - name: UserDetail_html5_repo_runtime
+    parameters:
+      service-plan: app-runtime
+      service: html5-apps-repo
+    type: org.cloudfoundry.managed-service
+  - name: UserDetail_html5_repo_host
+    parameters:
+      service-plan: app-host
+      service: html5-apps-repo
+    type: org.cloudfoundry.managed-service
+  - name: uaa_UserDetail
+    parameters:
+      path: ./xs-security.json
+      service-plan: application
+      service: xsuaa
+    type: org.cloudfoundry.managed-service
+
